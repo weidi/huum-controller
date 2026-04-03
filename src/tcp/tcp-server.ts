@@ -1,6 +1,7 @@
 import {MessageType, SaunaStatus} from './enums.ts'
 import {parseControllerHandshake} from '../util.ts'
 import * as msgBuilder from './msgBuilder.ts'
+import {logIncoming, logOutgoing} from '../util/logger.ts'
 
 import {HuumEvents, UserEvents} from '../events/eventEnum.ts'
 import eventBus from '../events/eventbus.ts'
@@ -22,6 +23,7 @@ Bun.listen({
         },
 
         data(socket, buffer) {
+            logIncoming(buffer)
             const messageType = buffer[0]
 
             switch (messageType) {
@@ -74,6 +76,7 @@ eventBus.on(HuumEvents.CONFIGURATION, () => {
     // Ask the controller for a status update
     if (heaterTcpSocket) {
         const message = msgBuilder.frequencyUpdate(pingFrequencySeconds)
+        logOutgoing(message)
         heaterTcpSocket.write(message)
     } else {
         console.log('Heater tcp socket undefined. Not asking for status update')
@@ -87,6 +90,7 @@ eventBus.on(UserEvents.TURN_ON, (request: TurnOnRequest) => {
     }
 
     const message = msgBuilder.heaterOn(request.targetTemperature, request.durationHours)
+    logOutgoing(message)
     heaterTcpSocket.write(message)
 })
 
@@ -97,6 +101,7 @@ eventBus.on(UserEvents.TURN_OFF, (request: TurnOffRequest) => {
     }
 
     const message = msgBuilder.heaterOff(request.targetTemperature)
+    logOutgoing(message)
     heaterTcpSocket.write(message)
 })
 

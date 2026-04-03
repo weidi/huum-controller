@@ -10,8 +10,27 @@ This repository is accompanied by a [blog post](https://kaurpalang.com/posts/inv
   - The project is using Bun 1.12.4
 
 ## Running
+
+### Local (requires Bun installed)
 1. Install dependencies `bun install`
-2. Start the server` bun run start`
+2. Start the server `bun run start`
+
+### Docker (no local dependencies required)
+1. Build and run with Docker Compose:
+   ```bash
+   docker-compose up --build
+   ```
+
+2. Or build and run manually:
+   ```bash
+   docker build -t huum-controller .
+   docker run -p 6969:6969 -p 8080:8080 huum-controller
+   ```
+
+3. Enable debug protocol logging with environment variable:
+   ```bash
+   docker run -p 6969:6969 -p 8080:8080 -e DEBUG_PROTOCOL=1 huum-controller
+   ```
 
 ## Usage
 The server starts a TCP server on port `6969`. The port must not be changes. What can be changes is the host. To do so,
