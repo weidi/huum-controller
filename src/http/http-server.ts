@@ -1,5 +1,6 @@
 import {HuumEvents, UserEvents} from '../events/eventEnum.ts'
 import eventBus from '../events/eventbus.ts'
+import {controllerState} from '../tcp/tcp-server.ts'
 
 const HTTP_PORT: string = process.env.HTTP_PORT || '8080'
 const HTTP_HOSTNAME: string = process.env.HTTP_HOSTNAME || '0.0.0.0'
@@ -13,6 +14,12 @@ Bun.serve({
         '/status': {
             GET: async () => {
                 return new Response(currentTemperature.toString(), {status: 200})
+            },
+        },
+
+        '/debug/state': {
+            GET: async () => {
+                return Response.json(controllerState)
             },
         },
 

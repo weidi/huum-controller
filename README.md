@@ -27,6 +27,14 @@ The endpoints on that server are used to enable controlling the sauna heater by 
 Responds with a plain number of the current temperature reading.
 
 ---
+**`GET /debug/state`**
+Responds with the latest parsed controller state as JSON, including the latest handshake, sensor reading, and `0x08`
+cloud update payload.
+
+This is useful for reverse engineering extra features such as light control: toggle the light physically or from the
+official app, then compare the JSON and `rawHex` fields before and after the change.
+
+---
 **`POST /start`**
 Starts the heater with a target heating temperature
 
@@ -116,6 +124,10 @@ Message is used to send heater state changes to the cloud.
 | `00`          | Termination                        |
 
 Update about heating being stopped follows the same logic as "Heater control"
+
+When reverse engineering optional accessories like sauna lights, `0x08` is the best message to watch first. The
+project exposes the latest parsed `0x08` frame via `GET /debug/state`, including timestamps and the untouched raw hex,
+so it is easier to compare captures while toggling external features.
 
 ### 0x09 - Status ping
 

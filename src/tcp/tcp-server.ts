@@ -1,11 +1,13 @@
 import {MessageType, SaunaStatus} from './enums.ts'
 import {parseControllerHandshake} from '../util.ts'
+import {parseCloudUpdate} from './parser.ts'
 import * as msgBuilder from './msgBuilder.ts'
 
 import {HuumEvents, UserEvents} from '../events/eventEnum.ts'
 import eventBus from '../events/eventbus.ts'
 
 let heaterTcpSocket: Bun.TCPSocket | undefined
+export const controllerState: ControllerState = {}
 
 const TCP_PORT = 6969 // Must not be changed
 const TCP_HOSTNAME = process.env.TCP_HOSTNAME || '0.0.0.0'
@@ -29,17 +31,14 @@ Bun.listen({
                     eventBus.emit(HuumEvents.HANDSHAKE, buffer)
                     break
                 case MessageType.SENSOR_READING:
-                    eventBus.emit(
-                        HuumEvents.SENSOR_READING,
-                        {
-                            temperature: Number(buffer[1]),
-                            status: SaunaStatus[buffer[4]!!],
-                            frequencySeconds: Number(buffer[3]),
-                        } as SensorUpdate
-                    )
+                    eventBus.emit(HuumEvents.SENSOR_READING, {
+                        temperature: Number(buffer[1]),
+                        status: SaunaStatus[buffer[4]!!],
+                        frequencySeconds: Number(buffer[3]),
+                    } as SensorUpdate)
                     break
                 case MessageType.CLOUD_UPDATE:
-                    eventBus.emit(HuumEvents.CLOUD_UPDATE, buffer)
+                    eventBus.emit(HuumEvents.CLOUD_UPDATE, parseCloudUpdate(buffer))
                     break
                 default:
                     console.log('[📥 Received data]', buffer.toString('hex'))
@@ -60,11 +59,13 @@ Bun.listen({
 })
 
 eventBus.on(HuumEvents.SENSOR_READING, (update: SensorUpdate) => {
+    controllerState.sensorReading = update
     console.log(`Sensor reading: ${JSON.stringify(update)}`)
 })
 
 eventBus.on(HuumEvents.HANDSHAKE, (buffer: Buffer) => {
     const handshake = parseControllerHandshake(buffer)
+    controllerState.handshake = handshake
     console.log(`Handshake: ${JSON.stringify(handshake)}`)
 
     eventBus.emit(HuumEvents.CONFIGURATION)
@@ -100,8 +101,9 @@ eventBus.on(UserEvents.TURN_OFF, (request: TurnOffRequest) => {
     heaterTcpSocket.write(message)
 })
 
-eventBus.on(HuumEvents.CLOUD_UPDATE, (data: Buffer) => {
-    console.log('[📥 Received data]', data.toString('hex'))
+eventBus.on(HuumEvents.CLOUD_UPDATE, (update: CloudUpdate) => {
+    controllerState.cloudUpdate = update
+    console.log(`Cloud update: ${JSON.stringify(update)}`)
 })
 
 
