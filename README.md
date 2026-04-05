@@ -59,10 +59,16 @@ Example response:
 }
 ```
 
+- `lightOn`: whether the sauna light is currently on.
+- `lightConfigured`: whether a light accessory is present/configured on the controller.
+- `steamerConfigured`: whether a steamer accessory is present/configured on the controller.
+
 ---
 **`GET /debug/state`**
 Responds with the latest parsed controller state as JSON, including the latest handshake, sensor reading, and `0x08`
 cloud update payload.
+
+This includes latest `lightOn`, `lightConfigured`, and `steamerConfigured` accessory flags derived from the `0x08` payload.
 
 This is useful for reverse engineering extra features such as light control: toggle the light physically or from the
 official app, then compare the JSON and `rawHex` fields before and after the change.
@@ -112,12 +118,12 @@ heater state. Can be used whenever to update the frequency.
 02 3f 31 2e 68 fc 00
 ```
 
-| Byte (group)  | Meaning                            |
-|---------------|------------------------------------|
-| `02`          | Message ID - Ping frequency update |
-| `3f 31 2e 68` | Current timestamp (Little Endian)  |
-| `fc`          | 0 - 255 delay in seconds           |
-| `00`          | Termination                        | 
+| Byte | Example | Meaning |
+|------|---------|---------|
+| `0` | `02` | Message ID - Ping frequency update |
+| `1-4` | `3f 31 2e 68` | Current timestamp (Little Endian) |
+| `5` | `fc` | 0 - 255 delay in seconds |
+| `6` | `00` | Termination | 
 
 
 ### 0x07 - Heater control
@@ -130,22 +136,20 @@ control.
 07 38 00 00 00 00 03 47 2f 2e 68 77 59 2e 68 47 2f 2e 68 ec c5 ef 10 00
 ``` 
 
-| Byte (group)  | Meaning                            |
-|---------------|------------------------------------|
-| `07`          | Message ID - Heater control        |
-| `38`          | Current temp in Hex (`56`deg here) |
-| `00 00 00 00` | Unknown padding                    |
-| `03`          | Unknown                            |
-| `47 2f 2e 68` | Heating started timestamp          |
-| `77 59 2e 68` | Heating stop timestamp             |
-| `47 2f 2e 68` | Current timestamp                  |
-| `ec c5 ef 10` | Unknown values                     |
-| `00`          | Termination                        |
-
-**Sample message for turning the heater off**
-```
-07 38 00 00 00 00 03 00 00 00 00 00 00 00 00 65 42 2e 68 75 59 fc 10 00
-```
+| Byte | Example | Meaning |
+|------|---------|---------|  
+| `0` | `07` | Message ID - Heater control |
+| `1` | `38` | Current temp in Hex (`56`deg here) |
+| `2` | `00` | Unknown |
+| `3` | `00` | Light state (`00` off, `01` on) |
+| `4` | `00` | Unknown |
+| `5` | `00` | Accessory configuration bitmask (`01` steamer, `02` light, `03` both) |
+| `6` | `03` | Unknown |
+| `7-10` | `47 2f 2e 68` | Heating started timestamp |
+| `11-14` | `77 59 2e 68` | Heating stop timestamp |
+| `15-18` | `47 2f 2e 68` | Current timestamp |
+| `19-22` | `ec c5 ef 10` | Unknown values |
+| `23` | `00` | Termination |
 The "heating started" and "heating stop" timestamps are here zeroed, meaning the heater will turn off.
 
 **Confirmed sample messages for light control**
@@ -153,15 +157,22 @@ The "heating started" and "heating stop" timestamps are here zeroed, meaning the
 07 41 00 01 00 02 03 00 00 00 00 00 00 00 00 65 86 d2 69 00 00 00 00 00
 07 41 00 00 00 02 03 00 00 00 00 00 00 00 00 a6 86 d2 69 00 00 00 00 00
 ```
+Flipping byte 3 from 01 to 00 turns light off
 
-| Byte | Meaning |
-|------|---------|
-| `0`  | Message ID `0x07` |
-| `1`  | Target temperature |
-| `3`  | Light state (`00` off, `01` on) |
-| `5`  | Accessory configuration bitmask (`01` steamer, `02` light, `03` both) |
-| `6`  | Mode/config value (`03` in current captures) |
-| `15-18` | Current timestamp |
+| Byte | Example | Meaning |
+|------|---------|---------|
+| `0` | `07` | Message ID `0x07` |
+| `1` | `41` | Target temperature |
+| `2` | `00` | Unknown |
+| `3` | `01` | Light state (`00` off, `01` on) |
+| `4` | `00` | Unknown |
+| `5` | `02` | Accessory configuration bitmask (`01` steamer, `02` light, `03` both) |
+| `6` | `03` | Unknown |
+| `7-10` | `00 00 00 00` | Heating started timestamp (zeroed for light control) |
+| `11-14` | `00 00 00 00` | Heating stop timestamp (zeroed for light control) |
+| `15-18` | `65 86 d2 69` | Current timestamp |
+| `19-22` | `00 00 00 00` | Unknown values |
+| `23` | `00` | Termination |
 
 
 ### 0x08 - Send update to cloud
@@ -173,27 +184,24 @@ Message is used to send heater state changes to the cloud.
 08 38 00 00 00 00 03 00 00 00 00 00 00 00 00 3f 31 2e 68 00 00 00 00 01 00
 ```
 
-| Byte (group)  | Meaning                            |
-|---------------|------------------------------------|
-| `08`          | Message ID - Update cloud          |
-| `38`          | Current temp in Hex (`56`deg here) |
-| `00 00 00 00` | Unknown padding                    |
-| `03`          | Unknown                            |
-| `47 2f 2e 68` | Heating started timestamp          |
-| `77 59 2e 68` | Heating stop timestamp             |
-| `47 2f 2e 68` | Current timestamp                  |
-| `ec c5 ef 10` | Unknown values                     |
-| `00`          | Termination                        |
-
-Update about heating being stopped follows the same logic as "Heater control"
-
-When reverse engineering optional accessories like sauna lights, `0x08` is the best message to watch first. The
-project exposes the latest parsed `0x08` frame via `GET /debug/state`, including timestamps and the untouched raw hex,
+| Byte | Example | Meaning |
+|------|---------|---------|  
+| `0` | `08` | Message ID - Update cloud |
+| `1` | `38` | Current temp in Hex (`56`deg here) |
+| `2` | `00` | Unknown |
+| `3` | `00` | Light state (`00` off, `01` on) |
+| `4` | `00` | Unknown |
+| `5` | `00` | Accessory configuration bitmask (`01` steamer, `02` light, `03` both) |
+| `6` | `03` | Unknown |
+| `7-10` | `00 00 00 00` | Heating started timestamp |
+| `11-14` | `00 00 00 00` | Heating stop timestamp |
+| `15-18` | `3f 31 2e 68` | Current timestamp |
+| `19-22` | `00 00 00 00` | Unknown values |
+| `23` | `01` | Trailer byte |
+| `24` | `00` | Termination |
 so it is easier to compare captures while toggling external features.
 
-For convenience, the TCP server also prints a byte-by-byte diff between consecutive `0x08` frames. In the current
-captures, byte `3` is treated as the live light state, while byte `5` is treated as an accessory configuration bitmask:
-`0x01` steamer, `0x02` light, `0x03` both.
+For convenience, the TCP server also prints a byte-by-byte diff between consecutive `0x08` frames.
 
 ### 0x09 - Status ping
 
@@ -204,15 +212,15 @@ Sent by the controller to report temperature sensor reading.
 09 21 00 fc 24 00 00 00 00 00 00
 ```
 
-| Byte (group)     | Meaning                            |
-|------------------|------------------------------------|
-| `09`             | Message ID - Status update         |
-| `21`             | Current temp in Hex (`33`deg here) |
-| `00`             | Padding?                           |
-| `fc`             | Frequency in seconds               |
-| `24`             | Heater status (`23`, `24`, `25`)   |
-| `00 00 00 00 00` | Padding?                           |
-| `00`             | Termination                        |
+| Byte | Example | Meaning |
+|------|---------|---------|
+| `0` | `09` | Message ID - Status update |
+| `1` | `21` | Current temp in Hex (`33`deg here) |
+| `2` | `00` | Padding? |
+| `3` | `fc` | Frequency in seconds |
+| `4` | `24` | Heater status (`23`, `24`, `25`) |
+| `5-9` | `00 00 00 00 00` | Padding? |
+| `10` | `00` | Termination |
 
 ### 0x0B - Server greeting
 
