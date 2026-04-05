@@ -150,6 +150,7 @@ control.
 | `15-18` | `47 2f 2e 68` | Current timestamp |
 | `19-22` | `ec c5 ef 10` | Unknown values |
 | `23` | `00` | Termination |
+
 The "heating started" and "heating stop" timestamps are here zeroed, meaning the heater will turn off.
 
 **Confirmed sample messages for light control**
@@ -199,6 +200,7 @@ Message is used to send heater state changes to the cloud.
 | `19-22` | `00 00 00 00` | Unknown values |
 | `23` | `01` | Trailer byte |
 | `24` | `00` | Termination |
+
 so it is easier to compare captures while toggling external features.
 
 For convenience, the TCP server also prints a byte-by-byte diff between consecutive `0x08` frames.
