@@ -55,6 +55,19 @@ type TurnOffRequest = {
 }
 ```
 
+---
+**`POST /light`**
+Experimental endpoint for toggling the sauna light using a `0x07` control frame with the light flag inferred from
+captured `0x08` updates.
+
+```typescript
+type LightToggleRequest = {
+  lightOn: boolean;
+}
+```
+
+The latest parsed `0x08` frame is also interpreted as `lightOn` when byte `5` equals `0x02`.
+
 ## Message types and payloads
 ### 0x02 - Set Ping frequency
 
@@ -128,6 +141,9 @@ Update about heating being stopped follows the same logic as "Heater control"
 When reverse engineering optional accessories like sauna lights, `0x08` is the best message to watch first. The
 project exposes the latest parsed `0x08` frame via `GET /debug/state`, including timestamps and the untouched raw hex,
 so it is easier to compare captures while toggling external features.
+
+For convenience, the TCP server also prints a byte-by-byte diff between consecutive `0x08` frames. In the current
+captures, byte `5` toggles between `00` and `02`, which is treated as the inferred light state.
 
 ### 0x09 - Status ping
 

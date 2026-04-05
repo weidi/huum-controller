@@ -38,6 +38,19 @@ Bun.serve({
                 return new Response('shush')
             },
         },
+
+        '/light': {
+            POST: async req => {
+                const request = await req.json() as LightToggleRequest
+                eventBus.emit(UserEvents.LIGHT_SET, request)
+
+                return Response.json({
+                    accepted: true,
+                    experimental: true,
+                    requestedLightOn: request.lightOn,
+                })
+            },
+        },
     },
 })
 

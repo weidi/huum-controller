@@ -13,8 +13,10 @@ type SensorUpdate = {
 type CloudUpdate = {
     messageType: number;
     targetTemperature: number;
+    lightOn: boolean;
     flags: {
         padding: number[];
+        light: number;
         mode: number;
         tail: number[];
         trailer: number[];
