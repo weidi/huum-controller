@@ -5,15 +5,21 @@ import {controllerState} from '../tcp/tcp-server.ts'
 const HTTP_PORT: string = process.env.HTTP_PORT || '8080'
 const HTTP_HOSTNAME: string = process.env.HTTP_HOSTNAME || '0.0.0.0'
 
-let currentTemperature: number = 0
-
 Bun.serve({
     port: HTTP_PORT,
     hostname: HTTP_HOSTNAME,
     routes: {
         '/status': {
             GET: async () => {
-                return new Response(currentTemperature.toString(), {status: 200})
+                return Response.json({
+                    temperature: controllerState.sensorReading?.temperature ?? 0,
+                    frequencySeconds: controllerState.sensorReading?.frequencySeconds ?? 0,
+                    heaterStatus: controllerState.sensorReading?.status ?? 'Unknown',
+                    targetTemperature: controllerState.cloudUpdate?.targetTemperature ?? null,
+                    lightOn: controllerState.cloudUpdate?.lightOn ?? false,
+                    lightConfigured: controllerState.cloudUpdate?.lightConfigured ?? false,
+                    steamerConfigured: controllerState.cloudUpdate?.steamerConfigured ?? false,
+                })
             },
         },
 
@@ -46,16 +52,12 @@ Bun.serve({
 
                 return Response.json({
                     accepted: true,
-                    experimental: true,
                     requestedLightOn: request.lightOn,
+                    note: 'Sends a confirmed 0x07 light-control packet using byte 3 as live light state and byte 5 as accessory configuration.',
                 })
             },
         },
     },
-})
-
-eventBus.on(HuumEvents.SENSOR_READING, (update: SensorUpdate) => {
-    currentTemperature = update.temperature
 })
 
 console.log(`🚀 HTTP server listening on ${HTTP_HOSTNAME}:${HTTP_PORT}`)

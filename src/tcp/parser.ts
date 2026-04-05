@@ -12,15 +12,19 @@ const parseUnixTimestampLE = (buffer: Uint8Array, offset: number): Date | null =
 const toHex = (buffer: Uint8Array): string => Buffer.from(buffer).toString('hex')
 
 export const parseCloudUpdate = (buffer: Uint8Array): CloudUpdate => {
-    const lightFlag = buffer[5] ?? 0
+    const lightStateFlag = buffer[3] ?? 0
+    const accessoryConfigFlag = buffer[5] ?? 0
 
     return {
         messageType: buffer[0] ?? 0,
         targetTemperature: buffer[1] ?? 0,
-        lightOn: lightFlag === 0x02,
+        lightOn: lightStateFlag !== 0,
+        lightConfigured: (accessoryConfigFlag & 0x02) !== 0,
+        steamerConfigured: (accessoryConfigFlag & 0x01) !== 0,
         flags: {
-            padding: Array.from(buffer.slice(2, 6)),
-            light: lightFlag,
+            reserved: [buffer[2] ?? 0, buffer[4] ?? 0],
+            lightState: lightStateFlag,
+            accessoryConfig: accessoryConfigFlag,
             mode: buffer[6] ?? 0,
             tail: Array.from(buffer.slice(19, 23)),
             trailer: Array.from(buffer.slice(23)),

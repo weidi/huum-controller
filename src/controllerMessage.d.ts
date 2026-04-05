@@ -14,9 +14,12 @@ type CloudUpdate = {
     messageType: number;
     targetTemperature: number;
     lightOn: boolean;
+    lightConfigured: boolean;
+    steamerConfigured: boolean;
     flags: {
-        padding: number[];
-        light: number;
+        reserved: number[];
+        lightState: number;
+        accessoryConfig: number;
         mode: number;
         tail: number[];
         trailer: number[];

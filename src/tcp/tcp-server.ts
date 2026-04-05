@@ -50,6 +50,8 @@ const logPacketDiff = (previousHex: string | undefined, currentHex: string) => {
 
 const getKnownTargetTemperature = () => controllerState.cloudUpdate?.targetTemperature ?? 0x41
 
+const getKnownAccessoryConfig = () => controllerState.cloudUpdate?.flags.accessoryConfig ?? 0x00
+
 Bun.listen({
     port: TCP_PORT,
     hostname: TCP_HOSTNAME,
@@ -147,8 +149,13 @@ eventBus.on(UserEvents.LIGHT_SET, (request: LightToggleRequest) => {
         return
     }
 
-    const message = msgBuilder.lightControl(request.lightOn, getKnownTargetTemperature())
-    console.log(`[📤 Sending experimental light control] ${Buffer.from(message).toString('hex')}`)
+    const message = msgBuilder.lightControl(
+        request.lightOn,
+        getKnownTargetTemperature(),
+        getKnownAccessoryConfig()
+    )
+    console.log('[📤 Sending 0x07 light control packet]')
+    logOutgoing(message)
     heaterTcpSocket.write(message)
 })
 

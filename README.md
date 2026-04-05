@@ -43,7 +43,21 @@ The endpoints on that server are used to enable controlling the sauna heater by 
 
 ### Endpoints
 **`GET /status`**
-Responds with a plain number of the current temperature reading.
+Responds with a JSON summary of the latest known controller state.
+
+Example response:
+
+```json
+{
+  "temperature": 27,
+  "frequencySeconds": 60,
+  "heaterStatus": "Offline",
+  "targetTemperature": 65,
+  "lightOn": true,
+  "lightConfigured": true,
+  "steamerConfigured": false
+}
+```
 
 ---
 **`GET /debug/state`**
@@ -76,8 +90,7 @@ type TurnOffRequest = {
 
 ---
 **`POST /light`**
-Experimental endpoint for toggling the sauna light using a `0x07` control frame with the light flag inferred from
-captured `0x08` updates.
+Endpoint for toggling the sauna light.
 
 ```typescript
 type LightToggleRequest = {
@@ -85,7 +98,8 @@ type LightToggleRequest = {
 }
 ```
 
-The latest parsed `0x08` frame is also interpreted as `lightOn` when byte `5` equals `0x02`.
+This sends a confirmed `0x07` control packet using byte `3` as the live light-state field and byte `5` as the
+accessory configuration bitmask observed from `0x08` status updates.
 
 ## Message types and payloads
 ### 0x02 - Set Ping frequency
@@ -108,7 +122,8 @@ heater state. Can be used whenever to update the frequency.
 
 ### 0x07 - Heater control
 
-Used by both the local physical interface and the server to turn the heater on and off.
+Used by both the local physical interface and the server to turn the heater on and off. It is also used for light
+control.
 
 **Sample Message:**
 ```  
@@ -132,6 +147,21 @@ Used by both the local physical interface and the server to turn the heater on a
 07 38 00 00 00 00 03 00 00 00 00 00 00 00 00 65 42 2e 68 75 59 fc 10 00
 ```
 The "heating started" and "heating stop" timestamps are here zeroed, meaning the heater will turn off.
+
+**Confirmed sample messages for light control**
+```
+07 41 00 01 00 02 03 00 00 00 00 00 00 00 00 65 86 d2 69 00 00 00 00 00
+07 41 00 00 00 02 03 00 00 00 00 00 00 00 00 a6 86 d2 69 00 00 00 00 00
+```
+
+| Byte | Meaning |
+|------|---------|
+| `0`  | Message ID `0x07` |
+| `1`  | Target temperature |
+| `3`  | Light state (`00` off, `01` on) |
+| `5`  | Accessory configuration bitmask (`01` steamer, `02` light, `03` both) |
+| `6`  | Mode/config value (`03` in current captures) |
+| `15-18` | Current timestamp |
 
 
 ### 0x08 - Send update to cloud
@@ -162,7 +192,8 @@ project exposes the latest parsed `0x08` frame via `GET /debug/state`, including
 so it is easier to compare captures while toggling external features.
 
 For convenience, the TCP server also prints a byte-by-byte diff between consecutive `0x08` frames. In the current
-captures, byte `5` toggles between `00` and `02`, which is treated as the inferred light state.
+captures, byte `3` is treated as the live light state, while byte `5` is treated as an accessory configuration bitmask:
+`0x01` steamer, `0x02` light, `0x03` both.
 
 ### 0x09 - Status ping
 

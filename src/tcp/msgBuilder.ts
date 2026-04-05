@@ -22,16 +22,17 @@ const heaterOn = (targetTemp: number = 90, durationHours: number = 3): Uint8Arra
 const lightControl = (
     lightOn: boolean,
     targetTemp: number = 0x41,
+    accessoryConfig: number = 0x02,
     date: Date = new Date()
 ): Uint8Array => {
     const buffer = new Uint8Array(24)
 
-    buffer[0] = 0x07 // Message type: "Local heater control"
+    buffer[0] = 0x07
     buffer[1] = targetTemp
-    buffer[5] = lightOn ? 0x02 : 0x00 // Experimental light flag derived from 0x08 captures
+    buffer[3] = lightOn ? 0x01 : 0x00
+    buffer[5] = accessoryConfig
     buffer[6] = 0x03
     buffer.set(dateToHexLE(date), 15)
-    buffer[23] = 0x00
 
     return buffer
 }
