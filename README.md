@@ -107,6 +107,30 @@ type LightToggleRequest = {
 This sends a confirmed `0x07` control packet using byte `3` as the live light-state field and byte `5` as the
 accessory configuration bitmask observed from `0x08` status updates.
 
+## Home Assistant package
+
+A ready-to-use Home Assistant package is included at `homeassistant/packages/huum_sauna.yaml`.
+
+To use it:
+
+1. Copy `homeassistant/packages/huum_sauna.yaml` into your Home Assistant config directory under `packages/`.
+2. Enable package loading in your Home Assistant `configuration.yaml`:
+
+   ```yaml
+   homeassistant:
+     packages: !include_dir_named packages
+   ```
+
+3. Edit the package and replace every `http://YOUR-HUUM-HOST:8080` placeholder with the reachable base URL for this
+   controller.
+4. Reload Home Assistant YAML configuration, or restart Home Assistant.
+
+The package exposes:
+- `switch.huum_sauna` for starting and stopping a sauna session
+- `switch.huum_light` for light control when the accessory is configured
+- `sensor.huum_sauna_temperature` and `sensor.huum_sauna_status` for monitoring
+- `input_number.huum_sauna_target_temperature` and `input_number.huum_sauna_duration` for session settings
+
 ## Message types and payloads
 ### 0x02 - Set Ping frequency
 

@@ -10,7 +10,7 @@ const heaterOn = (
     buffer[0] = 0x07 // Message type: "Turn On"
     buffer[1] = targetTemp // Target temperature (°C)
     buffer[3] = lightOn ? 0x01 : 0x00
-    buffer[5] = accessoryConfig
+    buffer[5] = 0x00
     buffer[6] = 0x03 // Unknown value
 
     const turnOnTime = new Date()
@@ -56,7 +56,7 @@ const heaterOff = (
     buffer[0] = 0x07 // Message type: "Turn Off"
     buffer[1] = targetTemp // Target temperature (°C)
     buffer[3] = lightOn ? 0x01 : 0x00
-    buffer[5] = accessoryConfig
+    buffer[5] = 0x00
     buffer[6] = 0x03 // Unknown value
     buffer.set(dateToHexLE(date), 15)
     buffer.set([0x75, 0x59, 0xFC, 0x10], 19) // Unknown values

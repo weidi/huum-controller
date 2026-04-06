@@ -142,8 +142,7 @@ eventBus.on(UserEvents.TURN_ON, (request: TurnOnRequest) => {
     const message = msgBuilder.heaterOn(
         request.targetTemperature,
         request.durationHours,
-        getKnownLightState(),
-        getKnownAccessoryConfig()
+        getKnownLightState()
     )
     logOutgoing(message)
     heaterTcpSocket.write(message)
@@ -157,8 +156,7 @@ eventBus.on(UserEvents.TURN_OFF, (request: TurnOffRequest) => {
 
     const message = msgBuilder.heaterOff(
         request.targetTemperature,
-        getKnownLightState(),
-        getKnownAccessoryConfig()
+        getKnownLightState()
     )
     logOutgoing(message)
     heaterTcpSocket.write(message)
