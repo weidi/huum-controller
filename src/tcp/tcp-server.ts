@@ -52,6 +52,8 @@ const getKnownTargetTemperature = () => controllerState.cloudUpdate?.targetTempe
 
 const getKnownAccessoryConfig = () => controllerState.cloudUpdate?.flags.accessoryConfig ?? 0x00
 
+const getKnownLightState = () => controllerState.cloudUpdate?.lightOn ?? false
+
 Bun.listen({
     port: TCP_PORT,
     hostname: TCP_HOSTNAME,
@@ -106,7 +108,10 @@ eventBus.on(HuumEvents.SENSOR_READING, (update: SensorUpdate) => {
         controllerState.heaterStatus = update.status
     }
 
-    console.log(`Sensor reading: ${JSON.stringify(controllerState.sensorReading)}`)
+    console.log(`Sensor reading: ${JSON.stringify({
+        ...controllerState.sensorReading,
+        resolvedHeaterStatus: controllerState.heaterStatus,
+    })}`)
 })
 
 eventBus.on(HuumEvents.HANDSHAKE, (buffer: Buffer) => {
@@ -134,7 +139,12 @@ eventBus.on(UserEvents.TURN_ON, (request: TurnOnRequest) => {
         return
     }
 
-    const message = msgBuilder.heaterOn(request.targetTemperature, request.durationHours)
+    const message = msgBuilder.heaterOn(
+        request.targetTemperature,
+        request.durationHours,
+        getKnownLightState(),
+        getKnownAccessoryConfig()
+    )
     logOutgoing(message)
     heaterTcpSocket.write(message)
 })
@@ -145,7 +155,11 @@ eventBus.on(UserEvents.TURN_OFF, (request: TurnOffRequest) => {
         return
     }
 
-    const message = msgBuilder.heaterOff(request.targetTemperature)
+    const message = msgBuilder.heaterOff(
+        request.targetTemperature,
+        getKnownLightState(),
+        getKnownAccessoryConfig()
+    )
     logOutgoing(message)
     heaterTcpSocket.write(message)
 })

@@ -13,6 +13,16 @@ test("parseSensorReading keeps status when present", () => {
     })
 })
 
+test("parseSensorReading maps heartbeat status 0x21 to online not heating", () => {
+    const reading = parseSensorReading(Uint8Array.from([0x09, 13, 0x00, 60, 0x21, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00]))
+
+    expect(reading).toEqual({
+        temperature: 13,
+        status: SaunaStatus.OnlineNotHeating,
+        frequencySeconds: 60,
+    })
+})
+
 test("partial sensor frames do not overwrite a known status", () => {
     const previousReading = {
         temperature: 29,

@@ -18,6 +18,10 @@ const parseHeaterStatus = (rawStatus: number | undefined): SaunaStatus | undefin
         return undefined
     }
 
+    if (rawStatus === 0x21) {
+        return SaunaStatus.OnlineNotHeating
+    }
+
     switch (rawStatus) {
         case SaunaStatus.Offline:
         case SaunaStatus.OnlineHeating:

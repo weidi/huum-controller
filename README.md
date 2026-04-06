@@ -210,18 +210,22 @@ For convenience, the TCP server also prints a byte-by-byte diff between consecut
 Sent by the controller to report temperature sensor reading.
 
 **Sample Message:**
+Older sample:
 ```
 09 21 00 fc 24 00 00 00 00 00 00
+
+09 0d 00 3c 21 02 00 00 00 00 00
 ```
 
 | Byte | Example | Meaning |
 |------|---------|---------|
 | `0` | `09` | Message ID - Status update |
 | `1` | `21` | Current temp in Hex (`33`deg here) |
-| `2` | `00` | Padding? |
+| `2` | `00` | Unknown |
 | `3` | `fc` | Frequency in seconds |
-| `4` | `24` | Heater status (`23`, `24`, `25`) |
-| `5-9` | `00 00 00 00 00` | Padding? |
+| `4` | `24` | Heater state 21-26 |
+| `5` | `02` | Unknown, seems to indicate "something" |
+| `6-9` | `00 00 00 00` | Padding? |
 | `10` | `00` | Termination |
 
 ### 0x0B - Server greeting

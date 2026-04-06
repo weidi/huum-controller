@@ -1,9 +1,16 @@
-const heaterOn = (targetTemp: number = 90, durationHours: number = 3): Uint8Array => {
+const heaterOn = (
+    targetTemp: number = 90,
+    durationHours: number = 3,
+    lightOn: boolean = false,
+    accessoryConfig: number = 0x02
+): Uint8Array => {
     const buffer = new Uint8Array(24)
 
     // Header
     buffer[0] = 0x07 // Message type: "Turn On"
     buffer[1] = targetTemp // Target temperature (°C)
+    buffer[3] = lightOn ? 0x01 : 0x00
+    buffer[5] = accessoryConfig
     buffer[6] = 0x03 // Unknown value
 
     const turnOnTime = new Date()
@@ -37,12 +44,19 @@ const lightControl = (
     return buffer
 }
 
-const heaterOff = (targetTemp: number = 90, date: Date = new Date()): Uint8Array => {
+const heaterOff = (
+    targetTemp: number = 90,
+    lightOn: boolean = false,
+    accessoryConfig: number = 0x02,
+    date: Date = new Date()
+): Uint8Array => {
     const buffer = new Uint8Array(24)
 
     // Header
     buffer[0] = 0x07 // Message type: "Turn Off"
     buffer[1] = targetTemp // Target temperature (°C)
+    buffer[3] = lightOn ? 0x01 : 0x00
+    buffer[5] = accessoryConfig
     buffer[6] = 0x03 // Unknown value
     buffer.set(dateToHexLE(date), 15)
     buffer.set([0x75, 0x59, 0xFC, 0x10], 19) // Unknown values
