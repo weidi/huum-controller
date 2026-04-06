@@ -1,6 +1,6 @@
-import {MessageType, SaunaStatus} from './enums.ts'
+import {MessageType} from './enums.ts'
 import {parseControllerHandshake} from '../util.ts'
-import {parseCloudUpdate} from './parser.ts'
+import {parseCloudUpdate, parseSensorReading} from './parser.ts'
 import * as msgBuilder from './msgBuilder.ts'
 import {logIncoming, logOutgoing} from '../util/logger.ts'
 
@@ -70,11 +70,7 @@ Bun.listen({
                     eventBus.emit(HuumEvents.HANDSHAKE, buffer)
                     break
                 case MessageType.SENSOR_READING:
-                    eventBus.emit(HuumEvents.SENSOR_READING, {
-                        temperature: Number(buffer[1]),
-                        status: SaunaStatus[buffer[4]!!],
-                        frequencySeconds: Number(buffer[3]),
-                    } as SensorUpdate)
+                    eventBus.emit(HuumEvents.SENSOR_READING, parseSensorReading(buffer))
                     break
                 case MessageType.CLOUD_UPDATE:
                     eventBus.emit(HuumEvents.CLOUD_UPDATE, parseCloudUpdate(buffer))
@@ -98,8 +94,11 @@ Bun.listen({
 })
 
 eventBus.on(HuumEvents.SENSOR_READING, (update: SensorUpdate) => {
-    controllerState.sensorReading = update
-    console.log(`Sensor reading: ${JSON.stringify(update)}`)
+    controllerState.sensorReading = {
+        ...controllerState.sensorReading,
+        ...update,
+    }
+    console.log(`Sensor reading: ${JSON.stringify(controllerState.sensorReading)}`)
 })
 
 eventBus.on(HuumEvents.HANDSHAKE, (buffer: Buffer) => {

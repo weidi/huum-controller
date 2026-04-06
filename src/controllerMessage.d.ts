@@ -6,7 +6,7 @@ type Handshake = {
 
 type SensorUpdate = {
     temperature: number;
-    status: SaunaStatus;
+    status?: SaunaStatus;
     frequencySeconds: number;
 }
 

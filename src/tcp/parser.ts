@@ -1,3 +1,5 @@
+import {SaunaStatus} from './enums.ts'
+
 const parseUnixTimestampLE = (buffer: Uint8Array, offset: number): Date | null => {
     const bytes = buffer.slice(offset, offset + 4)
     const timestamp = bytes[0]! | (bytes[1]! << 8) | (bytes[2]! << 16) | (bytes[3]! << 24)
@@ -10,6 +12,17 @@ const parseUnixTimestampLE = (buffer: Uint8Array, offset: number): Date | null =
 }
 
 const toHex = (buffer: Uint8Array): string => Buffer.from(buffer).toString('hex')
+
+export const parseSensorReading = (buffer: Uint8Array): SensorUpdate => {
+    const rawStatus = buffer[4]
+    const status = rawStatus === undefined ? undefined : SaunaStatus[rawStatus as SaunaStatus]
+
+    return {
+        temperature: buffer[1] ?? 0,
+        status,
+        frequencySeconds: buffer[3] ?? 0,
+    }
+}
 
 export const parseCloudUpdate = (buffer: Uint8Array): CloudUpdate => {
     const lightStateFlag = buffer[3] ?? 0
