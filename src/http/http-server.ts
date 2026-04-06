@@ -14,7 +14,7 @@ Bun.serve({
                 return Response.json({
                     temperature: controllerState.sensorReading?.temperature ?? 0,
                     frequencySeconds: controllerState.sensorReading?.frequencySeconds ?? 0,
-                    heaterStatus: controllerState.sensorReading?.status ?? 'Unknown',
+                    heaterStatus: controllerState.heaterStatus ?? controllerState.sensorReading?.status ?? 'Unknown',
                     targetTemperature: controllerState.cloudUpdate?.targetTemperature ?? null,
                     lightOn: controllerState.cloudUpdate?.lightOn ?? false,
                     lightConfigured: controllerState.cloudUpdate?.lightConfigured ?? false,

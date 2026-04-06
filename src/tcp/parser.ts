@@ -13,18 +13,22 @@ const parseUnixTimestampLE = (buffer: Uint8Array, offset: number): Date | null =
 
 const toHex = (buffer: Uint8Array): string => Buffer.from(buffer).toString('hex')
 
-export const parseSensorReading = (buffer: Uint8Array): SensorUpdate => {
-    const rawStatus = buffer[4]
-    const status = rawStatus === undefined ? undefined : SaunaStatus[rawStatus as SaunaStatus]
+const parseHeaterStatus = (rawStatus: number | undefined): SaunaStatus | undefined => {
+    if (rawStatus === undefined) {
+        return undefined
+    }
 
-    return {
-        temperature: buffer[1] ?? 0,
-        status,
-        frequencySeconds: buffer[3] ?? 0,
+    switch (rawStatus) {
+        case SaunaStatus.Offline:
+        case SaunaStatus.OnlineHeating:
+        case SaunaStatus.OnlineNotHeating:
+            return rawStatus
+        default:
+            return undefined
     }
 }
 
-export const parseCloudUpdate = (buffer: Uint8Array): CloudUpdate => {
+const parseStateUpdate = (buffer: Uint8Array): CloudUpdate | ControlUpdate => {
     const lightStateFlag = buffer[3] ?? 0
     const accessoryConfigFlag = buffer[5] ?? 0
 
@@ -48,3 +52,29 @@ export const parseCloudUpdate = (buffer: Uint8Array): CloudUpdate => {
         rawHex: toHex(buffer),
     }
 }
+
+export const deriveHeaterStatus = (
+    update: Pick<CloudUpdate | ControlUpdate, 'heatingStartedAt' | 'heatingEndsAt'>
+): SaunaStatus => {
+    const hasHeatingWindow = update.heatingStartedAt !== null && update.heatingEndsAt !== null
+
+    return hasHeatingWindow ? SaunaStatus.OnlineHeating : SaunaStatus.OnlineNotHeating
+}
+
+export const parseSensorReading = (buffer: Uint8Array): SensorUpdate => {
+    const rawStatus = buffer[4]
+    const status = parseHeaterStatus(rawStatus)
+
+    return {
+        temperature: buffer[1] ?? 0,
+        status,
+        frequencySeconds: buffer[3] ?? 0,
+    }
+}
+
+export const parseCloudUpdate = (buffer: Uint8Array): CloudUpdate => {
+    return parseStateUpdate(buffer) as CloudUpdate
+}
+
+export const parseControlUpdate = (buffer: Uint8Array): ControlUpdate =>
+    parseStateUpdate(buffer) as ControlUpdate
