@@ -18,18 +18,11 @@ const parseHeaterStatus = (rawStatus: number | undefined): SaunaStatus | undefin
         return undefined
     }
 
-    if (rawStatus === 0x21) {
-        return SaunaStatus.OnlineNotHeating
+    if (rawStatus >= SaunaStatus.Status21 && rawStatus <= SaunaStatus.Status26) {
+        return rawStatus as SaunaStatus
     }
 
-    switch (rawStatus) {
-        case SaunaStatus.Offline:
-        case SaunaStatus.OnlineHeating:
-        case SaunaStatus.OnlineNotHeating:
-            return rawStatus
-        default:
-            return undefined
-    }
+    return undefined
 }
 
 const parseStateUpdate = (buffer: Uint8Array): CloudUpdate | ControlUpdate => {
