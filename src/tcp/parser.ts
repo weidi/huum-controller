@@ -14,7 +14,7 @@ const toHex = (buffer: Uint8Array): string => Buffer.from(buffer).toString('hex'
 const SENSOR_STATUS_LABELS: Record<number, SensorStatusLabel> = {
     0x21: 'Status21',
     0x22: 'Status22',
-    0x23: 'Offline',
+    0x23: 'OnlineNotHeating',
     0x24: 'OnlineHeating',
     0x25: 'OnlineNotHeating',
     0x26: 'Status26',

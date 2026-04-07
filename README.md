@@ -58,7 +58,7 @@ Example response:
   "steamerConfigured": false,
   "sensorStatusRaw": 35,
   "sensorStatusHex": "0x23",
-  "sensorStatusLabel": "Offline",
+  "sensorStatusLabel": "OnlineNotHeating",
   "sensorStatusTrusted": false,
   "heatingStartedAt": "2026-04-07T19:45:52.000Z",
   "heatingEndsAt": "2026-04-07T21:45:52.000Z",
@@ -70,7 +70,7 @@ Example response:
 - `lightOn`: whether the sauna light is currently on.
 - `lightConfigured`: whether a light accessory is present/configured on the controller.
 - `steamerConfigured`: whether a steamer accessory is present/configured on the controller.
-- `sensorStatus*`: raw observational `0x09` telemetry, exposed for reverse engineering but not trusted for public heater mode.
+- `sensorStatus*`: raw `0x09` telemetry, exposed for reverse engineering only. `sensorStatusTrusted` remains `false` because the byte still flips inconsistently in captures.
 
 ---
 **`GET /debug/state`**
@@ -243,9 +243,12 @@ For convenience, the TCP server also prints a byte-by-byte diff between consecut
 
 Sent by the controller to report temperature sensor reading.
 
-The temperature and frequency fields are useful, but the status byte currently should be treated as observational only.
-Recent captures showed `0x09` staying at `0x23` while `0x08` clearly showed a heating session start and stop, so the
-HTTP `/status` endpoint does not use `0x09` to determine `heaterStatus`.
+The temperature and frequency fields are useful. Recent captures suggest:
+- `0x23` means online but not heating
+- `0x24` means actively heating
+
+But `0x09` still flips between `0x23` and `0x24` without a matching session-state change, so HTTP `/status` continues to derive
+`heaterStatus` from `0x07`/`0x08` session state while exposing the raw `0x09` reading only as observational data.
 
 **Sample Message:**
 Older sample:

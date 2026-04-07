@@ -9,7 +9,6 @@ type HeaterStatus = 'OnlineHeating' | 'OnlineNotHeating' | 'Unknown';
 type SensorStatusLabel =
     | 'Status21'
     | 'Status22'
-    | 'Offline'
     | 'OnlineHeating'
     | 'OnlineNotHeating'
     | 'Status26';

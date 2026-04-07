@@ -37,7 +37,7 @@ test("sensor raw status does not drive session heater state", () => {
     )
 
     expect(deriveSessionHeaterStatus(update)).toBe('OnlineHeating')
-    expect(sensor.rawStatusLabel).toBe('Offline')
+    expect(sensor.rawStatusLabel).toBe('OnlineNotHeating')
 })
 
 test("deriveSessionHeaterStatus returns unknown before any session state", () => {
