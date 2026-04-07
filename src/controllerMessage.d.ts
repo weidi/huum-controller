@@ -4,10 +4,22 @@ type Handshake = {
     deviceName: string;
 }
 
+type HeaterStatus = 'OnlineHeating' | 'OnlineNotHeating' | 'Unknown';
+
+type SensorStatusLabel =
+    | 'Status21'
+    | 'Status22'
+    | 'Offline'
+    | 'OnlineHeating'
+    | 'OnlineNotHeating'
+    | 'Status26';
+
 type SensorUpdate = {
     temperature: number;
-    status?: SaunaStatus;
     frequencySeconds: number;
+    rawStatus?: number;
+    rawStatusHex?: string;
+    rawStatusLabel?: SensorStatusLabel;
 }
 
 type CloudUpdate = {
@@ -50,10 +62,13 @@ type ControlUpdate = {
     rawHex: string;
 }
 
+type SessionState = Pick<CloudUpdate, 'messageType' | 'targetTemperature' | 'lightOn' | 'lightConfigured' | 'steamerConfigured' | 'flags' | 'heatingStartedAt' | 'heatingEndsAt' | 'reportedAt' | 'rawHex'>;
+
 type ControllerState = {
     handshake?: Handshake;
     sensorReading?: SensorUpdate;
     cloudUpdate?: CloudUpdate;
     controlUpdate?: ControlUpdate;
-    heaterStatus?: SaunaStatus;
+    sessionState?: SessionState;
+    heaterStatus?: HeaterStatus;
 }

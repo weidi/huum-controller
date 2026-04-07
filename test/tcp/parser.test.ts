@@ -1,15 +1,16 @@
 import {expect, test} from "bun:test"
 
-import {SaunaStatus} from "../../src/tcp/enums.ts"
 import {parseSensorReading} from "../../src/tcp/parser.ts"
 
-test("parseSensorReading keeps status when present", () => {
+test("parseSensorReading keeps raw status metadata when present", () => {
     const reading = parseSensorReading(Uint8Array.from([0x09, 29, 0x00, 60, 0x25, 0x00]))
 
     expect(reading).toEqual({
         temperature: 29,
-        status: SaunaStatus.OnlineNotHeating,
         frequencySeconds: 60,
+        rawStatus: 0x25,
+        rawStatusHex: '0x25',
+        rawStatusLabel: 'OnlineNotHeating',
     })
 })
 
@@ -18,8 +19,10 @@ test("parseSensorReading preserves raw status 0x21", () => {
 
     expect(reading).toEqual({
         temperature: 13,
-        status: SaunaStatus.Status21,
         frequencySeconds: 60,
+        rawStatus: 0x21,
+        rawStatusHex: '0x21',
+        rawStatusLabel: 'Status21',
     })
 })
 
@@ -28,8 +31,10 @@ test("parseSensorReading preserves raw status 0x22", () => {
 
     expect(reading).toEqual({
         temperature: 13,
-        status: SaunaStatus.Status22,
         frequencySeconds: 60,
+        rawStatus: 0x22,
+        rawStatusHex: '0x22',
+        rawStatusLabel: 'Status22',
     })
 })
 
@@ -38,16 +43,20 @@ test("parseSensorReading preserves raw status 0x26", () => {
 
     expect(reading).toEqual({
         temperature: 13,
-        status: SaunaStatus.Status26,
         frequencySeconds: 60,
+        rawStatus: 0x26,
+        rawStatusHex: '0x26',
+        rawStatusLabel: 'Status26',
     })
 })
 
 test("partial sensor frames do not overwrite a known status", () => {
     const previousReading = {
         temperature: 29,
-        status: SaunaStatus.OnlineNotHeating,
         frequencySeconds: 60,
+        rawStatus: 0x25,
+        rawStatusHex: '0x25',
+        rawStatusLabel: 'OnlineNotHeating',
     }
 
     const mergedReading = {
@@ -57,7 +66,9 @@ test("partial sensor frames do not overwrite a known status", () => {
 
     expect(mergedReading).toEqual({
         temperature: 11,
-        status: SaunaStatus.OnlineNotHeating,
         frequencySeconds: 60,
+        rawStatus: 0x25,
+        rawStatusHex: '0x25',
+        rawStatusLabel: 'OnlineNotHeating',
     })
 })

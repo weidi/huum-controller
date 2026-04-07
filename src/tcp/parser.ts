@@ -1,5 +1,3 @@
-import {SaunaStatus} from './enums.ts'
-
 const parseUnixTimestampLE = (buffer: Uint8Array, offset: number): Date | null => {
     const bytes = buffer.slice(offset, offset + 4)
     const timestamp = bytes[0]! | (bytes[1]! << 8) | (bytes[2]! << 16) | (bytes[3]! << 24)
@@ -13,16 +11,13 @@ const parseUnixTimestampLE = (buffer: Uint8Array, offset: number): Date | null =
 
 const toHex = (buffer: Uint8Array): string => Buffer.from(buffer).toString('hex')
 
-const parseHeaterStatus = (rawStatus: number | undefined): SaunaStatus | undefined => {
-    if (rawStatus === undefined) {
-        return undefined
-    }
-
-    if (rawStatus >= SaunaStatus.Status21 && rawStatus <= SaunaStatus.Status26) {
-        return rawStatus as SaunaStatus
-    }
-
-    return undefined
+const SENSOR_STATUS_LABELS: Record<number, SensorStatusLabel> = {
+    0x21: 'Status21',
+    0x22: 'Status22',
+    0x23: 'Offline',
+    0x24: 'OnlineHeating',
+    0x25: 'OnlineNotHeating',
+    0x26: 'Status26',
 }
 
 const parseStateUpdate = (buffer: Uint8Array): CloudUpdate | ControlUpdate => {
@@ -50,22 +45,43 @@ const parseStateUpdate = (buffer: Uint8Array): CloudUpdate | ControlUpdate => {
     }
 }
 
-export const deriveHeaterStatus = (
-    update: Pick<CloudUpdate | ControlUpdate, 'heatingStartedAt' | 'heatingEndsAt'>
-): SaunaStatus => {
-    const hasHeatingWindow = update.heatingStartedAt !== null && update.heatingEndsAt !== null
+export const getSensorStatusLabel = (rawStatus: number | undefined): SensorStatusLabel | undefined => {
+    if (rawStatus === undefined) {
+        return undefined
+    }
 
-    return hasHeatingWindow ? SaunaStatus.OnlineHeating : SaunaStatus.OnlineNotHeating
+    return SENSOR_STATUS_LABELS[rawStatus]
+}
+
+export const hasHeatingWindow = (
+    update: Pick<CloudUpdate | ControlUpdate, 'heatingStartedAt' | 'heatingEndsAt'> | undefined
+): boolean => {
+    if (!update) {
+        return false
+    }
+
+    return update.heatingStartedAt !== null && update.heatingEndsAt !== null
+}
+
+export const deriveSessionHeaterStatus = (
+    update: Pick<CloudUpdate | ControlUpdate, 'heatingStartedAt' | 'heatingEndsAt'> | undefined
+): HeaterStatus => {
+    if (!update) {
+        return 'Unknown'
+    }
+
+    return hasHeatingWindow(update) ? 'OnlineHeating' : 'OnlineNotHeating'
 }
 
 export const parseSensorReading = (buffer: Uint8Array): SensorUpdate => {
     const rawStatus = buffer[4]
-    const status = parseHeaterStatus(rawStatus)
 
     return {
         temperature: buffer[1] ?? 0,
-        status,
         frequencySeconds: buffer[3] ?? 0,
+        rawStatus,
+        rawStatusHex: rawStatus === undefined ? undefined : `0x${rawStatus.toString(16).padStart(2, '0')}`,
+        rawStatusLabel: getSensorStatusLabel(rawStatus),
     }
 }
 

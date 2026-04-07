@@ -1,15 +1,22 @@
 import {expect, test} from "bun:test"
 
-import {SaunaStatus} from "../../src/tcp/enums.ts"
-import {deriveHeaterStatus, parseCloudUpdate, parseControlUpdate} from "../../src/tcp/parser.ts"
+import {deriveSessionHeaterStatus, parseCloudUpdate, parseControlUpdate, parseSensorReading} from "../../src/tcp/parser.ts"
 
 test("cloud updates with no heating window report online not heating", () => {
     const update = parseCloudUpdate(
         Uint8Array.from([0x08, 0x41, 0x00, 0x00, 0x00, 0x02, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x08, 0x6A, 0xD3, 0x69, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00])
     )
 
-    expect(deriveHeaterStatus(update)).toBe(SaunaStatus.OnlineNotHeating)
+    expect(deriveSessionHeaterStatus(update)).toBe('OnlineNotHeating')
     expect(update.lightConfigured).toBe(true)
+})
+
+test("cloud updates with a heating window report online heating", () => {
+    const update = parseCloudUpdate(
+        Uint8Array.from([0x08, 0x32, 0x00, 0x00, 0x00, 0x02, 0x03, 0xF0, 0x5E, 0xD5, 0x69, 0x10, 0x7B, 0xD5, 0x69, 0x3C, 0x5F, 0xD5, 0x69, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00])
+    )
+
+    expect(deriveSessionHeaterStatus(update)).toBe('OnlineHeating')
 })
 
 test("control echoes update light state immediately", () => {
@@ -18,5 +25,21 @@ test("control echoes update light state immediately", () => {
     )
 
     expect(update.lightOn).toBe(true)
-    expect(deriveHeaterStatus(update)).toBe(SaunaStatus.OnlineNotHeating)
+    expect(deriveSessionHeaterStatus(update)).toBe('OnlineNotHeating')
+})
+
+test("sensor raw status does not drive session heater state", () => {
+    const update = parseCloudUpdate(
+        Uint8Array.from([0x08, 0x32, 0x00, 0x00, 0x00, 0x02, 0x03, 0xF0, 0x5E, 0xD5, 0x69, 0x10, 0x7B, 0xD5, 0x69, 0x3C, 0x5F, 0xD5, 0x69, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00])
+    )
+    const sensor = parseSensorReading(
+        Uint8Array.from([0x09, 0x13, 0x00, 0x3C, 0x23, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00])
+    )
+
+    expect(deriveSessionHeaterStatus(update)).toBe('OnlineHeating')
+    expect(sensor.rawStatusLabel).toBe('Offline')
+})
+
+test("deriveSessionHeaterStatus returns unknown before any session state", () => {
+    expect(deriveSessionHeaterStatus(undefined)).toBe('Unknown')
 })

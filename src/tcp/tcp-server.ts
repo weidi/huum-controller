@@ -1,6 +1,6 @@
 import {MessageType} from './enums.ts'
 import {parseControllerHandshake} from '../util.ts'
-import {deriveHeaterStatus, parseCloudUpdate, parseControlUpdate, parseSensorReading} from './parser.ts'
+import {deriveSessionHeaterStatus, parseCloudUpdate, parseControlUpdate, parseSensorReading} from './parser.ts'
 import * as msgBuilder from './msgBuilder.ts'
 import {logIncoming, logOutgoing} from '../util/logger.ts'
 
@@ -109,10 +109,6 @@ eventBus.on(HuumEvents.SENSOR_READING, (update: SensorUpdate) => {
         ...update,
     }
 
-    if (update.status !== undefined) {
-        controllerState.heaterStatus = update.status
-    }
-
     console.log(`Sensor reading: ${JSON.stringify({
         ...controllerState.sensorReading,
         resolvedHeaterStatus: controllerState.heaterStatus,
@@ -191,13 +187,15 @@ eventBus.on(HuumEvents.CLOUD_UPDATE, (update: CloudUpdate) => {
     logPacketDiff(previousCloudUpdateHex, update.rawHex)
     previousCloudUpdateHex = update.rawHex
     controllerState.cloudUpdate = update
-    controllerState.heaterStatus = deriveHeaterStatus(update)
+    controllerState.sessionState = update
+    controllerState.heaterStatus = deriveSessionHeaterStatus(update)
     console.log(`Cloud update: ${JSON.stringify(update)}`)
 })
 
 eventBus.on(HuumEvents.LOCAL_HEATER_CONTROL, (update: ControlUpdate) => {
     controllerState.controlUpdate = update
-    controllerState.heaterStatus = deriveHeaterStatus(update)
+    controllerState.sessionState = update
+    controllerState.heaterStatus = deriveSessionHeaterStatus(update)
 
     controllerState.cloudUpdate = {
         ...(controllerState.cloudUpdate ?? {}),

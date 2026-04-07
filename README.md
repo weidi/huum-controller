@@ -51,17 +51,26 @@ Example response:
 {
   "temperature": 27,
   "frequencySeconds": 60,
-  "heaterStatus": "Offline",
+  "heaterStatus": "OnlineHeating",
   "targetTemperature": 65,
   "lightOn": true,
   "lightConfigured": true,
-  "steamerConfigured": false
+  "steamerConfigured": false,
+  "sensorStatusRaw": 35,
+  "sensorStatusHex": "0x23",
+  "sensorStatusLabel": "Offline",
+  "sensorStatusTrusted": false,
+  "heatingStartedAt": "2026-04-07T19:45:52.000Z",
+  "heatingEndsAt": "2026-04-07T21:45:52.000Z",
+  "reportedAt": "2026-04-07T19:47:08.000Z"
 }
 ```
 
+- `heaterStatus`: normalized session state derived from `0x07`/`0x08` updates, not from `0x09`.
 - `lightOn`: whether the sauna light is currently on.
 - `lightConfigured`: whether a light accessory is present/configured on the controller.
 - `steamerConfigured`: whether a steamer accessory is present/configured on the controller.
+- `sensorStatus*`: raw observational `0x09` telemetry, exposed for reverse engineering but not trusted for public heater mode.
 
 ---
 **`GET /debug/state`**
@@ -233,6 +242,10 @@ For convenience, the TCP server also prints a byte-by-byte diff between consecut
 ### 0x09 - Status ping
 
 Sent by the controller to report temperature sensor reading.
+
+The temperature and frequency fields are useful, but the status byte currently should be treated as observational only.
+Recent captures showed `0x09` staying at `0x23` while `0x08` clearly showed a heating session start and stop, so the
+HTTP `/status` endpoint does not use `0x09` to determine `heaterStatus`.
 
 **Sample Message:**
 Older sample:
