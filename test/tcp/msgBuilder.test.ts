@@ -46,12 +46,21 @@ test("heaterOff preserves light state but clears accessory config", () => {
 })
 
 test("lightControl keeps accessory config behavior for dedicated light packets", () => {
-    const bytes = lightControl(true, 0x41, 0x02, new Date("2026-04-06T19:52:09.000Z"))
+    const bytes = lightControl(
+        true,
+        0x41,
+        0x02,
+        new Date("2026-04-07T16:34:58.000Z"),
+        new Date("2026-04-07T19:34:58.000Z"),
+        new Date("2026-04-07T16:35:00.000Z")
+    )
 
     expect(bytes[0]).toBe(0x07)
     expect(bytes[1]).toBe(0x41)
     expect(bytes[3]).toBe(0x01)
     expect(bytes[5]).toBe(0x02)
     expect(bytes[6]).toBe(0x03)
-    expect(Buffer.from(bytes).readUInt32LE(15)).toBe(1775505129)
+    expect(Buffer.from(bytes).readUInt32LE(7)).toBe(1775579698)
+    expect(Buffer.from(bytes).readUInt32LE(11)).toBe(1775590498)
+    expect(Buffer.from(bytes).readUInt32LE(15)).toBe(1775579700)
 })

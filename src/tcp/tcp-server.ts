@@ -54,6 +54,11 @@ const getKnownAccessoryConfig = () => controllerState.cloudUpdate?.flags.accesso
 
 const getKnownLightState = () => controllerState.cloudUpdate?.lightOn ?? false
 
+const getKnownHeatingWindow = () => ({
+    heatingStartedAt: controllerState.cloudUpdate?.heatingStartedAt ?? null,
+    heatingEndsAt: controllerState.cloudUpdate?.heatingEndsAt ?? null,
+})
+
 Bun.listen({
     port: TCP_PORT,
     hostname: TCP_HOSTNAME,
@@ -168,10 +173,14 @@ eventBus.on(UserEvents.LIGHT_SET, (request: LightToggleRequest) => {
         return
     }
 
+    const {heatingStartedAt, heatingEndsAt} = getKnownHeatingWindow()
+
     const message = msgBuilder.lightControl(
         request.lightOn,
         getKnownTargetTemperature(),
-        getKnownAccessoryConfig()
+        getKnownAccessoryConfig(),
+        heatingStartedAt,
+        heatingEndsAt
     )
     console.log('[📤 Sending 0x07 light control packet]')
     logOutgoing(message)

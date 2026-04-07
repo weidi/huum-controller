@@ -30,6 +30,8 @@ const lightControl = (
     lightOn: boolean,
     targetTemp: number = 0x41,
     accessoryConfig: number = 0x02,
+    heatingStartedAt: Date | null = null,
+    heatingEndsAt: Date | null = null,
     date: Date = new Date()
 ): Uint8Array => {
     const buffer = new Uint8Array(24)
@@ -39,6 +41,12 @@ const lightControl = (
     buffer[3] = lightOn ? 0x01 : 0x00
     buffer[5] = accessoryConfig
     buffer[6] = 0x03
+    if (heatingStartedAt) {
+        buffer.set(dateToHexLE(heatingStartedAt), 7)
+    }
+    if (heatingEndsAt) {
+        buffer.set(dateToHexLE(heatingEndsAt), 11)
+    }
     buffer.set(dateToHexLE(date), 15)
 
     return buffer

@@ -76,6 +76,7 @@ official app, then compare the JSON and `rawHex` fields before and after the cha
 ---
 **`POST /start`**
 Starts the heater with a target heating temperature
+You have to make sure to diable the remote start protection
 
 ```typescript
 type TurnOnRequest = {
