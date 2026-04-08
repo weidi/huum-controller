@@ -20,6 +20,8 @@ const SENSOR_STATUS_LABELS: Record<number, SensorStatusLabel> = {
     0x26: 'Status26',
 }
 
+const HEARTBEAT_MISS_THRESHOLD = 3
+
 const parseStateUpdate = (buffer: Uint8Array): CloudUpdate | ControlUpdate => {
     const lightStateFlag = buffer[3] ?? 0
     const accessoryConfigFlag = buffer[5] ?? 0
@@ -73,12 +75,41 @@ export const deriveSessionHeaterStatus = (
     return hasHeatingWindow(update) ? 'OnlineHeating' : 'OnlineNotHeating'
 }
 
+export const getEffectiveHeaterStatus = (
+    state: Pick<ControllerState, 'heaterStatus' | 'sensorReading' | 'lastHeartbeatAt'>,
+    fallbackHeartbeatFrequencySeconds: number,
+    now = new Date()
+): HeaterStatus => {
+    if (!state.lastHeartbeatAt) {
+        return state.heaterStatus ?? 'Unknown'
+    }
+
+    const heartbeatFrequencySeconds = state.sensorReading?.frequencySeconds ?? fallbackHeartbeatFrequencySeconds
+
+    if (heartbeatFrequencySeconds <= 0) {
+        return state.heaterStatus ?? 'Unknown'
+    }
+
+    const offlineThresholdMs = heartbeatFrequencySeconds * HEARTBEAT_MISS_THRESHOLD * 1000
+    const msSinceLastHeartbeat = now.getTime() - state.lastHeartbeatAt.getTime()
+
+    if (msSinceLastHeartbeat > offlineThresholdMs) {
+        return 'Offline'
+    }
+
+    return state.heaterStatus ?? 'Unknown'
+}
+
 export const parseSensorReading = (buffer: Uint8Array): SensorUpdate => {
+    const rawDoorFlag = buffer[2]
     const rawStatus = buffer[4]
 
     return {
         temperature: buffer[1] ?? 0,
         frequencySeconds: buffer[3] ?? 0,
+        rawDoorFlag,
+        rawDoorFlagHex: rawDoorFlag === undefined ? undefined : `0x${rawDoorFlag.toString(16).padStart(2, '0')}`,
+        doorOpen: rawDoorFlag === undefined ? undefined : rawDoorFlag !== 0,
         rawStatus,
         rawStatusHex: rawStatus === undefined ? undefined : `0x${rawStatus.toString(16).padStart(2, '0')}`,
         rawStatusLabel: getSensorStatusLabel(rawStatus),

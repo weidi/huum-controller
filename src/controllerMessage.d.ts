@@ -4,7 +4,7 @@ type Handshake = {
     deviceName: string;
 }
 
-type HeaterStatus = 'OnlineHeating' | 'OnlineNotHeating' | 'Unknown';
+type HeaterStatus = 'Offline' | 'OnlineHeating' | 'OnlineNotHeating' | 'Unknown';
 
 type SensorStatusLabel =
     | 'Status21'
@@ -16,6 +16,9 @@ type SensorStatusLabel =
 type SensorUpdate = {
     temperature: number;
     frequencySeconds: number;
+    rawDoorFlag?: number;
+    rawDoorFlagHex?: string;
+    doorOpen?: boolean;
     rawStatus?: number;
     rawStatusHex?: string;
     rawStatusLabel?: SensorStatusLabel;
@@ -70,4 +73,5 @@ type ControllerState = {
     controlUpdate?: ControlUpdate;
     sessionState?: SessionState;
     heaterStatus?: HeaterStatus;
+    lastHeartbeatAt?: Date;
 }

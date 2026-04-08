@@ -66,10 +66,11 @@ Example response:
 }
 ```
 
-- `heaterStatus`: normalized session state derived from `0x07`/`0x08` updates, not from `0x09`.
+- `heaterStatus`: normalized session state derived from `0x07`/`0x08` updates, with `Offline` returned after more than 3 missed `0x09` heartbeats.
 - `lightOn`: whether the sauna light is currently on.
 - `lightConfigured`: whether a light accessory is present/configured on the controller.
 - `steamerConfigured`: whether a steamer accessory is present/configured on the controller.
+- `doorOpen`: latest observed `0x09` byte `2` interpreted as a door contact bit (`0x00` closed, `0x01` open).
 - `sensorStatus*`: raw `0x09` telemetry, exposed for reverse engineering only. `sensorStatusTrusted` remains `false` because the byte still flips inconsistently in captures.
 
 ---
@@ -256,13 +257,16 @@ Older sample:
 09 21 00 fc 24 00 00 00 00 00 00
 
 09 0d 00 3c 21 02 00 00 00 00 00
+
+09 19 00 3c 25 00 00 00 00 00 00
+09 19 01 3c 25 00 00 00 00 00 00
 ```
 
 | Byte | Example | Meaning |
 |------|---------|---------|
 | `0` | `09` | Message ID - Status update |
 | `1` | `21` | Current temp in Hex (`33`deg here) |
-| `2` | `00` | Unknown |
+| `2` | `00` / `01` | Observed door bit: `00` closed, `01` open |
 | `3` | `fc` | Frequency in seconds |
 | `4` | `24` | Heater state 21-26 |
 | `5` | `02` | Unknown, seems to indicate "something" |

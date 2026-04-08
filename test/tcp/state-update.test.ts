@@ -1,6 +1,6 @@
 import {expect, test} from "bun:test"
 
-import {deriveSessionHeaterStatus, parseCloudUpdate, parseControlUpdate, parseSensorReading} from "../../src/tcp/parser.ts"
+import {deriveSessionHeaterStatus, getEffectiveHeaterStatus, parseCloudUpdate, parseControlUpdate, parseSensorReading} from "../../src/tcp/parser.ts"
 
 test("cloud updates with no heating window report online not heating", () => {
     const update = parseCloudUpdate(
@@ -42,4 +42,20 @@ test("sensor raw status does not drive session heater state", () => {
 
 test("deriveSessionHeaterStatus returns unknown before any session state", () => {
     expect(deriveSessionHeaterStatus(undefined)).toBe('Unknown')
+})
+
+test("effective heater status becomes offline after 3 missed heartbeats", () => {
+    expect(getEffectiveHeaterStatus({
+        heaterStatus: 'OnlineNotHeating',
+        sensorReading: {temperature: 22, frequencySeconds: 60},
+        lastHeartbeatAt: new Date('2026-04-08T16:05:41.340Z'),
+    }, 60, new Date('2026-04-08T16:08:42.000Z'))).toBe('Offline')
+})
+
+test("effective heater status stays online until the third heartbeat interval has fully elapsed", () => {
+    expect(getEffectiveHeaterStatus({
+        heaterStatus: 'OnlineHeating',
+        sensorReading: {temperature: 22, frequencySeconds: 60},
+        lastHeartbeatAt: new Date('2026-04-08T16:05:41.340Z'),
+    }, 60, new Date('2026-04-08T16:08:41.340Z'))).toBe('OnlineHeating')
 })

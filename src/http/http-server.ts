@@ -1,9 +1,11 @@
 import {HuumEvents, UserEvents} from '../events/eventEnum.ts'
 import eventBus from '../events/eventbus.ts'
 import {controllerState} from '../tcp/tcp-server.ts'
+import {getEffectiveHeaterStatus} from '../tcp/parser.ts'
 
 const HTTP_PORT: string = process.env.HTTP_PORT || '8080'
 const HTTP_HOSTNAME: string = process.env.HTTP_HOSTNAME || '0.0.0.0'
+const DEFAULT_HEARTBEAT_FREQUENCY_SECONDS = Number(process.env.UPDATE_FREQUENCY) || 60
 
 Bun.serve({
     port: HTTP_PORT,
@@ -14,7 +16,10 @@ Bun.serve({
                 return Response.json({
                     temperature: controllerState.sensorReading?.temperature ?? 0,
                     frequencySeconds: controllerState.sensorReading?.frequencySeconds ?? 0,
-                    heaterStatus: controllerState.heaterStatus ?? 'Unknown',
+                    doorOpen: controllerState.sensorReading?.doorOpen ?? null,
+                    doorRaw: controllerState.sensorReading?.rawDoorFlag ?? null,
+                    doorRawHex: controllerState.sensorReading?.rawDoorFlagHex ?? null,
+                    heaterStatus: getEffectiveHeaterStatus(controllerState, DEFAULT_HEARTBEAT_FREQUENCY_SECONDS),
                     targetTemperature: controllerState.sessionState?.targetTemperature ?? null,
                     lightOn: controllerState.sessionState?.lightOn ?? false,
                     lightConfigured: controllerState.sessionState?.lightConfigured ?? false,

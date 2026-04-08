@@ -1,6 +1,6 @@
 import {MessageType} from './enums.ts'
 import {parseControllerHandshake} from '../util.ts'
-import {deriveSessionHeaterStatus, parseCloudUpdate, parseControlUpdate, parseSensorReading} from './parser.ts'
+import {deriveSessionHeaterStatus, getEffectiveHeaterStatus, parseCloudUpdate, parseControlUpdate, parseSensorReading} from './parser.ts'
 import * as msgBuilder from './msgBuilder.ts'
 import {logIncoming, logOutgoing} from '../util/logger.ts'
 
@@ -15,7 +15,6 @@ const TCP_PORT = 6969 // Must not be changed
 const TCP_HOSTNAME = process.env.TCP_HOSTNAME || '0.0.0.0'
 
 const pingFrequencySeconds = Number(process.env.UPDATE_FREQUENCY) || 60
-
 const logPacketDiff = (previousHex: string | undefined, currentHex: string) => {
     if (!previousHex) {
         console.log('[0x08 diff] First cloud update captured')
@@ -108,10 +107,11 @@ eventBus.on(HuumEvents.SENSOR_READING, (update: SensorUpdate) => {
         ...controllerState.sensorReading,
         ...update,
     }
+    controllerState.lastHeartbeatAt = new Date()
 
     console.log(`Sensor reading: ${JSON.stringify({
         ...controllerState.sensorReading,
-        resolvedHeaterStatus: controllerState.heaterStatus,
+        resolvedHeaterStatus: getEffectiveHeaterStatus(controllerState, pingFrequencySeconds),
     })}`)
 })
 
